@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import type { OutputFormat, TestDepth, CoverageScope, GenerateResult } from '@/lib/types'
+import type { OutputFormat, TestDepth, CoverageScope, GenerateResult, Attachment } from '@/lib/types'
 import { Header } from '@/components/Header'
 import { InputPanel } from '@/components/InputPanel'
 import { OutputPanel } from '@/components/OutputPanel'
 
 export default function Home() {
   const [input, setInput] = useState('')
+  const [attachments, setAttachments] = useState<Attachment[]>([])
   const [format, setFormat] = useState<OutputFormat>('gherkin')
   const [depth, setDepth] = useState<TestDepth>('standard')
   const [coverage, setCoverage] = useState<CoverageScope>('positive-negative')
@@ -15,8 +16,19 @@ export default function Home() {
   const [result, setResult] = useState<GenerateResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  // Merge text input + all attachment extracted text
+  function buildFullInput(): string {
+    const parts: string[] = []
+    if (input.trim()) parts.push(input.trim())
+    attachments.forEach(a => {
+      parts.push(`\n--- Attachment: ${a.name} ---\n${a.extractedText}`)
+    })
+    return parts.join('\n\n')
+  }
+
   async function handleGenerate() {
-    if (!input.trim()) return
+    const fullInput = buildFullInput()
+    if (!fullInput.trim()) return
     setLoading(true)
     setError(null)
     setResult(null)
@@ -25,14 +37,11 @@ export default function Home() {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input, format, depth, coverage }),
+        body: JSON.stringify({ input: fullInput, format, depth, coverage }),
       })
       const data = await res.json()
-      if (!res.ok) {
-        setError(data.error ?? 'Something went wrong.')
-      } else {
-        setResult(data)
-      }
+      if (!res.ok) setError(data.error ?? 'Something went wrong.')
+      else setResult(data)
     } catch {
       setError('Network error. Please check your connection and try again.')
     } finally {
@@ -45,6 +54,14 @@ export default function Home() {
     setError(null)
   }
 
+  function addAttachment(a: Attachment) {
+    setAttachments(prev => [...prev, a])
+  }
+
+  function removeAttachment(id: string) {
+    setAttachments(prev => prev.filter(a => a.id !== id))
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -53,6 +70,9 @@ export default function Home() {
           <InputPanel
             input={input}
             setInput={setInput}
+            attachments={attachments}
+            onAddAttachment={addAttachment}
+            onRemoveAttachment={removeAttachment}
             format={format}
             setFormat={setFormat}
             depth={depth}

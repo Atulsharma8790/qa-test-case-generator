@@ -1,7 +1,8 @@
 'use client'
 
-import { Sparkles, Loader2, FileText, ChevronRight } from 'lucide-react'
-import type { OutputFormat, TestDepth, CoverageScope } from '@/lib/types'
+import { Sparkles, Loader2, FileText, ChevronRight, Paperclip } from 'lucide-react'
+import type { OutputFormat, TestDepth, CoverageScope, Attachment } from '@/lib/types'
+import { FileUploadZone } from './FileUploadZone'
 
 const EXAMPLES = [
   {
@@ -44,6 +45,9 @@ Constraints:
 interface Props {
   input: string
   setInput: (v: string) => void
+  attachments: Attachment[]
+  onAddAttachment: (a: Attachment) => void
+  onRemoveAttachment: (id: string) => void
   format: OutputFormat
   setFormat: (v: OutputFormat) => void
   depth: TestDepth
@@ -57,12 +61,14 @@ interface Props {
 
 export function InputPanel({
   input, setInput,
+  attachments, onAddAttachment, onRemoveAttachment,
   format, setFormat,
   depth, setDepth,
   coverage, setCoverage,
   loading, error, onGenerate,
 }: Props) {
-  const canSubmit = input.trim().length >= 20 && !loading
+  const hasContent = input.trim().length >= 20 || attachments.length > 0
+  const canSubmit = hasContent && !loading
 
   return (
     <div className="max-w-[900px] mx-auto">
@@ -114,6 +120,20 @@ export function InputPanel({
               </button>
             ))}
           </div>
+        </div>
+
+        {/* File attachments */}
+        <div className="px-6 pb-5 border-t border-white/[0.06] pt-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Paperclip size={14} className="text-[#6B7F96]" />
+            <span className="text-sm font-semibold text-white">Attach Documents</span>
+            <span className="text-xs text-[#6B7F96]">— PDF, Word, Excel, images, wireframes</span>
+          </div>
+          <FileUploadZone
+            attachments={attachments}
+            onAdd={onAddAttachment}
+            onRemove={onRemoveAttachment}
+          />
         </div>
 
         {/* Config bar */}
@@ -212,10 +232,10 @@ export function InputPanel({
           )}
           {!error && (
             <p className="text-xs text-[#6B7F96] flex-1">
-              {input.trim().length < 20 && input.length > 0
-                ? 'Add more detail for better results.'
-                : input.length === 0
-                ? 'Paste your requirement above to get started.'
+              {!hasContent
+                ? 'Paste a requirement above or attach a document to get started.'
+                : attachments.length > 0 && !input.trim()
+                ? `${attachments.length} document${attachments.length > 1 ? 's' : ''} attached — ready to generate.`
                 : `Generating in ${format === 'both' ? '~20' : '~12'}s with ${depth} depth…`}
             </p>
           )}

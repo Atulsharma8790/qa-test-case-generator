@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeft, Copy, Check, Download, RefreshCw, Loader2, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Copy, Check, Download, RefreshCw, Loader2, ChevronDown, Upload, FileDown } from 'lucide-react'
 import type { GenerateResult, TestCase, OutputFormat } from '@/lib/types'
+import { ExportModal } from './ExportModal'
+import { JiraModal } from './JiraModal'
 
 const typeColors: Record<TestCase['type'], string> = {
   positive: '#10B981',
@@ -68,6 +70,8 @@ interface Props {
 
 export function OutputPanel({ result, format, onBack, onRegenerate, loading }: Props) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set([result.testCases[0]?.id]))
+  const [showExport, setShowExport] = useState(false)
+  const [showJira, setShowJira] = useState(false)
 
   function toggleExpand(id: string) {
     setExpandedIds(prev => {
@@ -137,11 +141,18 @@ export function OutputPanel({ result, format, onBack, onRegenerate, loading }: P
           <button onClick={expandAll} className="text-xs text-[#7B8FA8] hover:text-white transition-colors px-2 py-1">Expand all</button>
           <button onClick={collapseAll} className="text-xs text-[#7B8FA8] hover:text-white transition-colors px-2 py-1">Collapse all</button>
           <button
-            onClick={downloadFeature}
+            onClick={() => setShowExport(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#12121E] border border-white/[0.08] text-[#94A3B8] hover:text-white text-xs font-medium transition-all"
           >
-            <Download size={13} />
-            Download .feature
+            <FileDown size={13} />
+            Export
+          </button>
+          <button
+            onClick={() => setShowJira(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0052CC]/80 hover:bg-[#0052CC] text-white text-xs font-medium transition-all border border-[#0052CC]"
+          >
+            <Upload size={13} />
+            Upload to JIRA
           </button>
           <CopyButton text={buildFullExport()} />
           <button
@@ -304,6 +315,9 @@ export function OutputPanel({ result, format, onBack, onRegenerate, loading }: P
           )
         })}
       </div>
+
+      {showExport && <ExportModal result={result} onClose={() => setShowExport(false)} />}
+      {showJira && <JiraModal result={result} onClose={() => setShowJira(false)} />}
     </div>
   )
 }
