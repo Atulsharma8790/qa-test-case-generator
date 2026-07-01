@@ -3,6 +3,7 @@
 import { useRef, useState, DragEvent } from 'react'
 import { Upload, FileText, Image, Table, X, Loader2, CheckCircle } from 'lucide-react'
 import type { Attachment, AttachmentType } from '@/lib/types'
+import { useAuth } from '@/context/auth'
 
 const ACCEPTED = '.pdf,.docx,.xlsx,.csv,.txt,.png,.jpg,.jpeg,.webp,.gif'
 
@@ -29,23 +30,31 @@ interface Props {
   attachments: Attachment[]
   onAdd: (a: Attachment) => void
   onRemove: (id: string) => void
+  onNeedAuth: () => void
 }
 
-export function FileUploadZone({ attachments, onAdd, onRemove }: Props) {
+export function FileUploadZone({ attachments, onAdd, onRemove, onNeedAuth }: Props) {
+  const { isUnlocked, getHeaders } = useAuth()
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
   const [uploading, setUploading] = useState<string[]>([]) // file names currently uploading
 
   async function processFile(file: File) {
+    if (!isUnlocked) { onNeedAuth(); return }
     if (uploading.includes(file.name)) return
     setUploading(prev => [...prev, file.name])
 
     try {
       const fd = new FormData()
       fd.append('file', file)
-      const res = await fetch('/api/extract', { method: 'POST', body: fd })
+      const res = await fetch('/api/extract', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: fd,
+      })
       const data = await res.json()
 
+      if (res.status === 401) { onNeedAuth(); return }
       if (!res.ok) {
         alert(`${file.name}: ${data.error}`)
         return

@@ -6,18 +6,106 @@
 
 * { box-sizing: border-box; }
 
+/* ── CSS custom properties (dark default) ── */
+:root {
+  --bg-app:      #0A0A0F;
+  --bg-card:     #12121E;
+  --bg-elevated: #0D0D18;
+  --bg-input:    #0A0A0F;
+  --bg-chip:     #1E1E2E;
+  --border-subtle:  rgba(255,255,255,0.06);
+  --border-default: rgba(255,255,255,0.08);
+  --border-mid:     rgba(255,255,255,0.12);
+  --text-primary:   #E2E8F0;
+  --text-secondary: #94A3B8;
+  --text-muted:     #7B8FA8;
+  --text-dimmer:    #6B7F96;
+  --scrollbar-track: #12121E;
+  --scrollbar-thumb: #2D2D44;
+}
+
+/* ── Light theme overrides ── */
+[data-theme="light"] {
+  --bg-app:      #F1F5F9;
+  --bg-card:     #FFFFFF;
+  --bg-elevated: #F8FAFC;
+  --bg-input:    #FFFFFF;
+  --bg-chip:     #EEF2FF;
+  --border-subtle:  rgba(0,0,0,0.06);
+  --border-default: rgba(0,0,0,0.10);
+  --border-mid:     rgba(0,0,0,0.15);
+  --text-primary:   #0F172A;
+  --text-secondary: #334155;
+  --text-muted:     #475569;
+  --text-dimmer:    #64748B;
+  --scrollbar-track: #E2E8F0;
+  --scrollbar-thumb: #94A3B8;
+}
+
 body {
-  background: #0A0A0F;
-  color: #E2E8F0;
+  background: var(--bg-app);
+  color: var(--text-primary);
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #12121E; }
-::-webkit-scrollbar-thumb { background: #2D2D44; border-radius: 3px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #6366F1; }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   LIGHT MODE — Tailwind arbitrary-value class overrides
+   Tailwind escapes # → \# in generated CSS, so selectors must use \[\#...\]
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Backgrounds */
+[data-theme="light"] .bg-\[\#0A0A0F\]  { background-color: var(--bg-app) !important; }
+[data-theme="light"] .bg-\[\#0D0D18\]  { background-color: var(--bg-elevated) !important; }
+[data-theme="light"] .bg-\[\#12121E\]  { background-color: var(--bg-card) !important; }
+[data-theme="light"] .bg-\[\#1E1E2E\]  { background-color: var(--bg-chip) !important; }
+
+/* Opacity-based white backgrounds → dark equivalents */
+[data-theme="light"] .bg-white\/\[0\.03\]  { background-color: rgba(0,0,0,0.02) !important; }
+[data-theme="light"] .bg-white\/\[0\.04\]  { background-color: rgba(0,0,0,0.03) !important; }
+[data-theme="light"] .bg-white\/\[0\.05\]  { background-color: rgba(0,0,0,0.04) !important; }
+[data-theme="light"] .bg-white\/\[0\.06\]  { background-color: rgba(0,0,0,0.05) !important; }
+[data-theme="light"] .bg-white\/\[0\.07\]  { background-color: rgba(0,0,0,0.05) !important; }
+[data-theme="light"] .bg-white\/\[0\.08\]  { background-color: rgba(0,0,0,0.06) !important; }
+[data-theme="light"] .bg-white\/\[0\.1\]   { background-color: rgba(0,0,0,0.07) !important; }
+
+/* Hover white backgrounds */
+[data-theme="light"] .hover\:bg-white\/\[0\.06\]:hover  { background-color: rgba(0,0,0,0.05) !important; }
+[data-theme="light"] .hover\:bg-white\/\[0\.08\]:hover  { background-color: rgba(0,0,0,0.06) !important; }
+[data-theme="light"] .hover\:bg-white\/\[0\.1\]:hover   { background-color: rgba(0,0,0,0.07) !important; }
+
+/* Text colors */
+[data-theme="light"] .text-white              { color: var(--text-primary) !important; }
+[data-theme="light"] .text-\[\#E2E8F0\]       { color: var(--text-primary) !important; }
+[data-theme="light"] .text-\[\#94A3B8\]       { color: var(--text-secondary) !important; }
+[data-theme="light"] .text-\[\#7B8FA8\]       { color: var(--text-muted) !important; }
+[data-theme="light"] .text-\[\#6B7F96\]       { color: var(--text-dimmer) !important; }
+[data-theme="light"] .text-\[\#4A5568\]       { color: var(--text-muted) !important; }
+[data-theme="light"] .text-\[\#818CF8\]       { color: #4F46E5 !important; }
+[data-theme="light"] .text-\[\#A5B4FC\]       { color: #4F46E5 !important; }
+[data-theme="light"] .hover\:text-white:hover { color: var(--text-primary) !important; }
+
+/* Borders */
+[data-theme="light"] .border-white\/\[0\.05\]  { border-color: rgba(0,0,0,0.05) !important; }
+[data-theme="light"] .border-white\/\[0\.06\]  { border-color: rgba(0,0,0,0.06) !important; }
+[data-theme="light"] .border-white\/\[0\.07\]  { border-color: rgba(0,0,0,0.07) !important; }
+[data-theme="light"] .border-white\/\[0\.08\]  { border-color: rgba(0,0,0,0.08) !important; }
+[data-theme="light"] .border-white\/\[0\.1\]   { border-color: rgba(0,0,0,0.10) !important; }
+[data-theme="light"] .border-white\/\[0\.12\]  { border-color: rgba(0,0,0,0.12) !important; }
+
+/* Border-dashed drop zones */
+[data-theme="light"] .border-dashed            { border-color: rgba(0,0,0,0.15) !important; }
+
+/* Placeholder text */
+[data-theme="light"] .placeholder-\[\#4A5568\]::placeholder { color: #94A3B8; }
+
+/* ── Gherkin block ── */
 .gherkin-block {
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
   font-size: 0.8rem;
@@ -29,3 +117,62 @@ body {
 .gherkin-keyword { color: #A78BFA; font-weight: 600; }
 .gherkin-scenario { color: #60A5FA; font-weight: 500; }
 .gherkin-feature { color: #34D399; font-weight: 600; }
+
+[data-theme="light"] .gherkin-keyword  { color: #7C3AED; }
+[data-theme="light"] .gherkin-scenario { color: #2563EB; }
+[data-theme="light"] .gherkin-feature  { color: #059669; }
+
+/* ── Fade-in animation for modals ── */
+@keyframes fade-in {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.animate-fade-in { animation: fade-in 0.18s ease-out both; }
+
+::placeholder { color: var(--text-dimmer); opacity: 1; }
+
+/* Themed input/select/textarea — replaces hardcoded dark bg */
+.input-themed {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+}
+.input-themed:focus {
+  border-color: rgba(99,102,241,0.5);
+  outline: none;
+}
+
+/* ── Interactive element micro-polish ── */
+button, a, [role="button"] {
+  cursor: pointer !important;
+}
+button {
+  user-select: none;
+  -webkit-user-select: none;
+}
+button:disabled {
+  cursor: not-allowed !important;
+}
+button:not(:disabled):active {
+  transform: scale(0.97);
+}
+a {
+  text-decoration: none;
+}
+
+/* ── Focus ring ── */
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent-grad, #6366F1);
+  outline-offset: 2px;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dimmer); }
+
+/* ── Smooth transitions on all interactive elements ── */
+button, a { transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s; }
+button:not(:disabled):hover { opacity: 0.88; }
+

@@ -2,9 +2,11 @@ export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { testConnection, fetchProjects, fetchLinkTypes, uploadTestCases } from '@/lib/jiraClient'
+import { verifyPasscode, unauthorizedResponse } from '@/lib/auth'
 import type { JiraConfig, TestCase } from '@/lib/types'
 
 export async function POST(req: NextRequest) {
+  if (!verifyPasscode(req.headers.get('x-access-code'))) return unauthorizedResponse()
   try {
     const body = await req.json()
     const { action, config, testCases, suiteName, priorityMap } = body as {

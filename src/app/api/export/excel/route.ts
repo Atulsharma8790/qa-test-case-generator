@@ -2,9 +2,11 @@ export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { buildExcel } from '@/lib/exportBuilders'
+import { verifyPasscode, unauthorizedResponse } from '@/lib/auth'
 import type { GenerateResult, ExportColumn } from '@/lib/types'
 
 export async function POST(req: NextRequest) {
+  if (!verifyPasscode(req.headers.get('x-access-code'))) return unauthorizedResponse()
   try {
     const { result, columns, parentKey } = await req.json() as {
       result: GenerateResult

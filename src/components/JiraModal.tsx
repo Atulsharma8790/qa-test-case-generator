@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { X, CheckCircle, AlertCircle, Loader2, ExternalLink, Upload, Link } from 'lucide-react'
 import type { JiraConfig, JiraProject, JiraLinkType, JiraUploadResult, GenerateResult } from '@/lib/types'
+import { useAuth } from '@/context/auth'
 
 const DEFAULT_CONFIG: JiraConfig = {
   baseUrl: '',
@@ -22,9 +23,11 @@ type Step = 'connect' | 'configure' | 'upload' | 'done'
 interface Props {
   result: GenerateResult
   onClose: () => void
+  onNeedAuth: () => void
 }
 
-export function JiraModal({ result, onClose }: Props) {
+export function JiraModal({ result, onClose, onNeedAuth }: Props) {
+  const { isUnlocked, getHeaders } = useAuth()
   const [step, setStep] = useState<Step>('connect')
   const [config, setConfig] = useState<JiraConfig>(DEFAULT_CONFIG)
   const [testing, setTesting] = useState(false)
@@ -46,11 +49,13 @@ export function JiraModal({ result, onClose }: Props) {
   }
 
   async function jiraAction(action: string, extra: object = {}) {
+    if (!isUnlocked) { onNeedAuth(); throw new Error('auth_required') }
     const res = await fetch('/api/jira', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getHeaders() },
       body: JSON.stringify({ action, config, ...extra }),
     })
+    if (res.status === 401) { onNeedAuth(); throw new Error('auth_required') }
     const data = await res.json()
     if (!res.ok) throw new Error(data.error ?? 'Request failed')
     return data
@@ -70,6 +75,7 @@ export function JiraModal({ result, onClose }: Props) {
       setLinkTypes(links.linkTypes)
       setStep('configure')
     } catch (e: unknown) {
+      if (e instanceof Error && e.message === 'auth_required') return
       setConnError(e instanceof Error ? e.message : 'Connection failed')
     } finally {
       setTesting(false)
@@ -101,6 +107,7 @@ export function JiraModal({ result, onClose }: Props) {
       setUploadResults(allResults)
       setStep('done')
     } catch (e: unknown) {
+      if (e instanceof Error && e.message === 'auth_required') return
       setUploadError(e instanceof Error ? e.message : 'Upload failed')
     } finally {
       setUploading(false)
@@ -180,7 +187,7 @@ export function JiraModal({ result, onClose }: Props) {
                 <label className="text-xs font-semibold text-[#7B8FA8] uppercase tracking-wider block mb-1.5">JIRA Base URL</label>
                 <input value={config.baseUrl} onChange={e => update('baseUrl', e.target.value)}
                   placeholder={config.authType === 'basic' ? 'https://yourcompany.atlassian.net' : 'https://jira.yourcompany.com'}
-                  className="w-full bg-[#0A0A0F] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-[#4A5568] focus:outline-none focus:border-[#6366F1]/50 font-mono transition-colors"
+                  className="w-full rounded-lg px-3 py-2 text-sm font-mono focus:outline-none transition-colors input-themed"
                 />
               </div>
 
@@ -189,7 +196,7 @@ export function JiraModal({ result, onClose }: Props) {
                   <label className="text-xs font-semibold text-[#7B8FA8] uppercase tracking-wider block mb-1.5">Email</label>
                   <input value={config.email} onChange={e => update('email', e.target.value)}
                     placeholder="you@company.com"
-                    className="w-full bg-[#0A0A0F] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-[#4A5568] focus:outline-none focus:border-[#6366F1]/50 transition-colors"
+                    className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors input-themed"
                   />
                 </div>
               )}
@@ -200,7 +207,7 @@ export function JiraModal({ result, onClose }: Props) {
                 </label>
                 <input value={config.apiToken} onChange={e => update('apiToken', e.target.value)}
                   type="password" placeholder="••••••••••••••••"
-                  className="w-full bg-[#0A0A0F] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-[#4A5568] focus:outline-none focus:border-[#6366F1]/50 transition-colors font-mono"
+                  className="w-full rounded-lg px-3 py-2 text-sm font-mono focus:outline-none transition-colors input-themed"
                 />
                 <p className="text-xs text-[#6B7F96] mt-1">
                   {config.authType === 'basic'
@@ -246,7 +253,7 @@ export function JiraModal({ result, onClose }: Props) {
                 <div>
                   <label className="text-xs font-semibold text-[#7B8FA8] uppercase tracking-wider block mb-1.5">Project</label>
                   <select value={config.projectKey} onChange={e => update('projectKey', e.target.value)}
-                    className="w-full bg-[#0A0A0F] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#6366F1]/50 transition-colors"
+                    className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors input-themed"
                   >
                     <option value="">Select project…</option>
                     {projects.map(p => <option key={p.key} value={p.key}>{p.key} — {p.name}</option>)}
@@ -256,7 +263,7 @@ export function JiraModal({ result, onClose }: Props) {
                   <label className="text-xs font-semibold text-[#7B8FA8] uppercase tracking-wider block mb-1.5">Issue Type</label>
                   <input value={config.issueType} onChange={e => update('issueType', e.target.value)}
                     placeholder="Test / Task / Story / Sub-task"
-                    className="w-full bg-[#0A0A0F] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-[#4A5568] focus:outline-none focus:border-[#6366F1]/50 transition-colors"
+                    className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors input-themed"
                   />
                 </div>
               </div>
@@ -268,13 +275,13 @@ export function JiraModal({ result, onClose }: Props) {
                   </label>
                   <input value={config.parentKey} onChange={e => update('parentKey', e.target.value.toUpperCase())}
                     placeholder="e.g. PROJ-123"
-                    className="w-full bg-[#0A0A0F] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-[#4A5568] focus:outline-none focus:border-[#6366F1]/50 font-mono transition-colors"
+                    className="w-full rounded-lg px-3 py-2 text-sm font-mono focus:outline-none transition-colors input-themed"
                   />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-[#7B8FA8] uppercase tracking-wider block mb-1.5">Link Type</label>
                   <select value={config.linkType} onChange={e => update('linkType', e.target.value)}
-                    className="w-full bg-[#0A0A0F] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#6366F1]/50 transition-colors"
+                    className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors input-themed"
                   >
                     {linkTypes.map(lt => (
                       <option key={lt.id} value={lt.name}>{lt.name} ({lt.inward} / {lt.outward})</option>
@@ -289,7 +296,7 @@ export function JiraModal({ result, onClose }: Props) {
                   <label className="text-xs font-semibold text-[#7B8FA8] uppercase tracking-wider block mb-1.5">Component <span className="normal-case font-normal text-[#6B7F96]">(optional)</span></label>
                   <input value={config.componentName ?? ''} onChange={e => update('componentName', e.target.value)}
                     placeholder="e.g. Authentication"
-                    className="w-full bg-[#0A0A0F] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-[#4A5568] focus:outline-none focus:border-[#6366F1]/50 transition-colors"
+                    className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors input-themed"
                   />
                 </div>
                 <div>
@@ -298,7 +305,7 @@ export function JiraModal({ result, onClose }: Props) {
                     value={config.labels?.join(', ') ?? ''}
                     onChange={e => setConfig(prev => ({ ...prev, labels: e.target.value.split(',').map(l => l.trim()).filter(Boolean) }))}
                     placeholder="ai-generated, regression"
-                    className="w-full bg-[#0A0A0F] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-[#4A5568] focus:outline-none focus:border-[#6366F1]/50 transition-colors"
+                    className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors input-themed"
                   />
                 </div>
               </div>
@@ -313,7 +320,7 @@ export function JiraModal({ result, onClose }: Props) {
                       <span className="text-[#6B7F96] text-xs">→</span>
                       <input value={jira}
                         onChange={e => setPriorityMap(prev => ({ ...prev, [our]: e.target.value }))}
-                        className="flex-1 bg-[#0A0A0F] border border-white/[0.08] rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#6366F1]/50"
+                        className="flex-1 rounded px-2 py-1 text-xs focus:outline-none input-themed"
                       />
                     </div>
                   ))}

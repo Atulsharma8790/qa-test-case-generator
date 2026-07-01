@@ -5,8 +5,14 @@ import type { OutputFormat, TestDepth, CoverageScope, GenerateResult, Attachment
 import { Header } from '@/components/Header'
 import { InputPanel } from '@/components/InputPanel'
 import { OutputPanel } from '@/components/OutputPanel'
+import { PasscodeModal } from '@/components/PasscodeModal'
+import { useAuth } from '@/context/auth'
+import { PORTFOLIO_URL } from '@/lib/config'
+import { DisclaimerModal } from '@/components/DisclaimerModal'
 
 export default function Home() {
+  const { isUnlocked, getHeaders } = useAuth()
+
   const [input, setInput] = useState('')
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [format, setFormat] = useState<OutputFormat>('gherkin')
@@ -15,8 +21,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<GenerateResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [showPasscode, setShowPasscode] = useState(false)
+  const [showDisclaimer, setShowDisclaimer] = useState(false)
 
-  // Merge text input + all attachment extracted text
   function buildFullInput(): string {
     const parts: string[] = []
     if (input.trim()) parts.push(input.trim())
@@ -27,6 +34,10 @@ export default function Home() {
   }
 
   async function handleGenerate() {
+    if (!isUnlocked) {
+      setShowPasscode(true)
+      return
+    }
     const fullInput = buildFullInput()
     if (!fullInput.trim()) return
     setLoading(true)
@@ -36,12 +47,17 @@ export default function Home() {
     try {
       const res = await fetch('/api/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getHeaders() },
         body: JSON.stringify({ input: fullInput, format, depth, coverage }),
       })
       const data = await res.json()
-      if (!res.ok) setError(data.error ?? 'Something went wrong.')
-      else setResult(data)
+      if (res.status === 401) {
+        setShowPasscode(true)
+      } else if (!res.ok) {
+        setError(data.error ?? 'Something went wrong.')
+      } else {
+        setResult(data)
+      }
     } catch {
       setError('Network error. Please check your connection and try again.')
     } finally {
@@ -63,8 +79,9 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-app)' }}>
+      <Header onShowPasscode={() => setShowPasscode(true)} onLock={() => { setResult(null); setError(null) }} />
+
       <main className="flex-1 w-full max-w-[1280px] mx-auto px-4 sm:px-6 py-8 lg:py-12">
         {!result ? (
           <InputPanel
@@ -82,6 +99,7 @@ export default function Home() {
             loading={loading}
             error={error}
             onGenerate={handleGenerate}
+            onNeedAuth={() => setShowPasscode(true)}
           />
         ) : (
           <OutputPanel
@@ -90,22 +108,36 @@ export default function Home() {
             onBack={handleReset}
             onRegenerate={handleGenerate}
             loading={loading}
+            onNeedAuth={() => setShowPasscode(true)}
           />
         )}
       </main>
 
-      <footer className="border-t border-white/[0.06] py-5">
+      <footer className="border-t py-5" style={{ borderColor: 'var(--border-subtle)' }}>
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-[#6B7F96]">
+          <p className="text-xs" style={{ color: 'var(--text-dimmer)' }}>
             Built by{' '}
-            <a href="https://atulsharma8790.github.io" target="_blank" rel="noopener noreferrer" className="text-[#6366F1] hover:text-[#818CF8] transition-colors">
+            <a href={PORTFOLIO_URL} target="_blank" rel="noopener noreferrer" className="text-[#6366F1] hover:text-[#818CF8] transition-colors">
               Atul Sharma
             </a>
             {' '}· QA Automation Architect
           </p>
-          <p className="text-xs text-[#6B7F96]">Powered by Claude AI · Open source on GitHub</p>
+          <p className="text-xs" style={{ color: 'var(--text-dimmer)' }}>
+            Powered by Claude AI · Open source on GitHub ·{' '}
+            <button onClick={() => setShowDisclaimer(true)} className="underline hover:opacity-80 transition-opacity" style={{ color: 'var(--text-dimmer)' }}>
+              Disclaimer & Privacy
+            </button>
+          </p>
         </div>
       </footer>
+
+      {showPasscode && (
+        <PasscodeModal
+          onClose={() => setShowPasscode(false)}
+          onUnlocked={handleGenerate}
+        />
+      )}
+      {showDisclaimer && <DisclaimerModal onClose={() => setShowDisclaimer(false)} />}
     </div>
   )
 }

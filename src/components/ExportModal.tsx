@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { X, Download, FileText, Table, Code, FileDown, CheckSquare, Square, Info } from 'lucide-react'
 import type { GenerateResult, ExportColumn, ExportFormat } from '@/lib/types'
 import { DEFAULT_COLUMNS, buildFeatureFile, buildCsv, buildTxt, buildXrayXml } from '@/lib/exportBuilders'
+import { useAuth } from '@/context/auth'
 
 const FORMAT_OPTIONS: Array<{ id: ExportFormat; label: string; desc: string; icon: React.ReactNode; badge?: string }> = [
   { id: 'excel',    label: 'Excel (.xlsx)',        desc: 'JIRA-ready, 3 sheets: test cases, summary, import guide', icon: <Table size={15} className="text-emerald-400" />, badge: 'Recommended' },
@@ -16,9 +17,11 @@ const FORMAT_OPTIONS: Array<{ id: ExportFormat; label: string; desc: string; ico
 interface Props {
   result: GenerateResult
   onClose: () => void
+  onNeedAuth: () => void
 }
 
-export function ExportModal({ result, onClose }: Props) {
+export function ExportModal({ result, onClose, onNeedAuth }: Props) {
+  const { isUnlocked, getHeaders } = useAuth()
   const [format, setFormat] = useState<ExportFormat>('excel')
   const [columns, setColumns] = useState<ExportColumn[]>(DEFAULT_COLUMNS)
   const [parentKey, setParentKey] = useState('')
@@ -30,6 +33,7 @@ export function ExportModal({ result, onClose }: Props) {
   }
 
   async function handleDownload() {
+    if (format === 'excel' && !isUnlocked) { onNeedAuth(); return }
     setDownloading(true)
     try {
       const enabled = columns.filter(c => c.enabled)
@@ -38,9 +42,10 @@ export function ExportModal({ result, onClose }: Props) {
       if (format === 'excel') {
         const res = await fetch('/api/export/excel', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...getHeaders() },
           body: JSON.stringify({ result, columns: enabled, parentKey }),
         })
+        if (res.status === 401) { onNeedAuth(); return }
         const blob = await res.blob()
         download(blob, `${filename}-test-cases.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
@@ -101,7 +106,7 @@ export function ExportModal({ result, onClose }: Props) {
                 value={parentKey}
                 onChange={e => setParentKey(e.target.value.toUpperCase())}
                 placeholder="e.g. PROJ-123"
-                className="w-full bg-[#0A0A0F] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-[#4A5568] focus:outline-none focus:border-[#6366F1]/50 font-mono transition-colors"
+                className="w-full rounded-lg px-3 py-2 text-sm font-mono focus:outline-none transition-colors" style={{ background: "var(--bg-app)", border: "1px solid var(--border-default)", color: "var(--text-primary)" }}
               />
               <p className="text-xs text-[#6B7F96] mt-1">Added as a column + used in JIRA link creation</p>
             </div>
@@ -112,7 +117,7 @@ export function ExportModal({ result, onClose }: Props) {
                   value={projectKey}
                   onChange={e => setProjectKey(e.target.value.toUpperCase())}
                   placeholder="e.g. PROJ"
-                  className="w-full bg-[#0A0A0F] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-[#4A5568] focus:outline-none focus:border-[#6366F1]/50 font-mono transition-colors"
+                  className="w-full rounded-lg px-3 py-2 text-sm font-mono focus:outline-none transition-colors" style={{ background: "var(--bg-app)", border: "1px solid var(--border-default)", color: "var(--text-primary)" }}
                 />
               </div>
             )}

@@ -3,10 +3,12 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { detectAttachmentType, extractPdf, extractDocx, extractExcel, extractCsv, extractTxt } from '@/lib/extractors'
+import { verifyPasscode, unauthorizedResponse } from '@/lib/auth'
 
 const client = new Anthropic()
 
 export async function POST(req: NextRequest) {
+  if (!verifyPasscode(req.headers.get('x-access-code'))) return unauthorizedResponse()
   try {
     const formData = await req.formData()
     const file = formData.get('file') as File | null

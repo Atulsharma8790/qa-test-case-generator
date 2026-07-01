@@ -57,6 +57,7 @@ interface Props {
   loading: boolean
   error: string | null
   onGenerate: () => void
+  onNeedAuth: () => void
 }
 
 export function InputPanel({
@@ -65,7 +66,7 @@ export function InputPanel({
   format, setFormat,
   depth, setDepth,
   coverage, setCoverage,
-  loading, error, onGenerate,
+  loading, error, onGenerate, onNeedAuth,
 }: Props) {
   const hasContent = input.trim().length >= 20 || attachments.length > 0
   const canSubmit = hasContent && !loading
@@ -105,7 +106,8 @@ export function InputPanel({
             onChange={e => setInput(e.target.value)}
             placeholder="Paste your JIRA ticket, user story, acceptance criteria, or feature description here…"
             rows={9}
-            className="w-full bg-[#0A0A0F] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-[#4A5568] resize-none focus:outline-none focus:border-[#6366F1]/50 transition-colors leading-relaxed"
+            className="w-full rounded-xl px-4 py-3 text-sm resize-none focus:outline-none transition-colors leading-relaxed"
+            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-primary)' }}
           />
           {/* Quick examples */}
           <div className="flex flex-wrap items-center gap-2 mt-3">
@@ -133,6 +135,7 @@ export function InputPanel({
             attachments={attachments}
             onAdd={onAddAttachment}
             onRemove={onRemoveAttachment}
+            onNeedAuth={onNeedAuth}
           />
         </div>
 

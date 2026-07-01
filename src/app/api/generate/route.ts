@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { buildSystemPrompt, buildUserPrompt } from '@/lib/prompts'
+import { verifyPasscode, unauthorizedResponse } from '@/lib/auth'
 import type { GenerateOptions, GenerateResult } from '@/lib/types'
 
 const client = new Anthropic()
 
 export async function POST(req: NextRequest) {
+  if (!verifyPasscode(req.headers.get('x-access-code'))) return unauthorizedResponse()
   try {
     const body: GenerateOptions = await req.json()
     const { input, format, depth, coverage } = body
